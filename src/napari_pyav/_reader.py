@@ -151,10 +151,17 @@ class FastVideoReader:
         if isinstance(index, (int, np.integer)):  # single frame
             return self.read_frame(index)
         elif isinstance(index, tuple) and isinstance(index[0], int):
+            # This is napari specific slicing. Return the first index here, which is the frame no.
             return self.read_frame(index[0])
         elif isinstance(index, slice):
             frames = [self.read_frame(i) for i in np.r_[index]]
             return np.array(frames)
+        elif isinstance(index, list) and index[0] == int:
+            frames = [self.read_frame(i) for i in index]
+            return np.array(frames) 
+        elif isinstance(index, np.ndarray) and index.dtype == int:
+            frames = [self.read_frame(i) for i in index]
+            return np.array(frames) 
         else:
             raise NotImplementedError(f"slicing of {type(index)} : {index} not implemented yet")
     
