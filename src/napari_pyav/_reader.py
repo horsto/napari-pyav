@@ -5,11 +5,14 @@ It implements the Reader specification, but your plugin may choose to
 implement multiple readers or even other plugin contributions. see:
 https://napari.org/stable/plugins/guides.html?#readers
 """
+from pathlib import Path
 import numpy as np
 import av
 import warnings
 
 warnings.simplefilter("once")
+
+ACCEPTED_CONTAINERS = ['.mp4'] # Strictly speaking, only mp4 should be allowed 
 
 def napari_get_reader(path):
     """A basic implementation of a Reader contribution.
@@ -25,9 +28,9 @@ def napari_get_reader(path):
         If the path is a recognized format, return a function that accepts the
         same path or list of paths, and returns a list of layer data tuples.
     """
-    paths = [path] if isinstance(path, str) else path
+    paths = [Path(path)] if isinstance(path, str) else path
     for path in paths:
-        if not path.endswith(".mp4"):
+        if not path.suffix in ACCEPTED_CONTAINERS:
             return None
 
     return reader_function
@@ -56,7 +59,7 @@ def reader_function(path):
         default to layer_type=="image" if not provided
     """
     paths = [path] if isinstance(path, str) else path
-    out = [(FastVideoReader(path), {}, 'image') for path in paths]
+    out = [(FastVideoReader(path, read_format='rgb24'), {}, 'image') for path in paths]
     return out
 
 
@@ -81,8 +84,11 @@ class FastVideoReader:
         self._frame_to_pts = lambda n: round(n * self._pts_per_frame) + self.stream.start_time
         self.rewind()
         self.forgiving = forgiving
-        if self.container.format.variable_fps:
-            warn_transcode(f'Variable frame rate video detected. Seeking will likely be unrealiable. I will warn again if I detect seek gitches')
+        try:
+            if self.container.format.variable_fps:
+                warn_transcode(f'Variable frame rate video detected. Seeking will likely be unrealiable. I will warn again if I detect seek gitches')
+        except AttributeError:
+            pass
         # if self.stream.codec_context.has_b_frames:
         #     warnings.warn(f'B-frames detected. Seeking may be unrealiable.')
         #     warn_transcode()
