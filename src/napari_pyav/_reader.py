@@ -162,6 +162,13 @@ class FastVideoReader:
         elif isinstance(index, np.ndarray) and index.dtype == int:
             frames = [self.read_frame(i) for i in index]
             return np.array(frames) 
+        elif isinstance(index, tuple) and len(index)==3:
+            # New in napari 0.6.3
+            requested_slice = index[0]
+            start, stop, step = requested_slice.start, requested_slice.stop, requested_slice.step
+            indices = range(start, stop, step if step is not None else 1)
+            frames = [self.read_frame(i) for i in indices]
+            return np.array(frames)
         else:
             raise NotImplementedError(f"slicing of {type(index)} : {index} not implemented yet")
     
